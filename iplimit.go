@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func NewRateLimit(pool *redis.Pool, key string, requests uint, time time.Duration, keySuffixGetter func(*gin.Context) string) gin.HandlerFunc {
+func NewRateLimit(pool *redis.Pool, key string, requests int64, time time.Duration, keySuffixGetter func(*gin.Context) string) gin.HandlerFunc {
 
 	if keySuffixGetter == nil {
 		keySuffixGetter = KeySuffixGetterIP()
@@ -18,7 +18,7 @@ func NewRateLimit(pool *redis.Pool, key string, requests uint, time time.Duratio
 
 	return func(ctx *gin.Context) {
 		// Initialise requestNumber at 0 because they're cool!
-		requestNumber := uint(0)
+		requestNumber := int64(0)
 
 		// Fetch the suffix the the redis key
 		// Return if it's empty.
@@ -42,7 +42,7 @@ func NewRateLimit(pool *redis.Pool, key string, requests uint, time time.Duratio
 			panic(err)
 			return
 		} else {
-			requestNumber = reply.(uint)
+			requestNumber = reply.(int64)
 		}
 
 		// Check if the current number of requests is greater than allowed.

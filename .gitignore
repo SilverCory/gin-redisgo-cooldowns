@@ -1,0 +1,6 @@
+## Golang dep
+Gopkg.lock
+vendor
+
+## IntelliJ
+.idea

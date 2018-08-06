@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/garyburd/redigo/redis"
 	"github.com/gin-gonic/gin"
+	"github.com/gomodule/redigo/redis"
 )
 
 func NewRateLimit(pool *redis.Pool, key string, requests int64, time time.Duration, keySuffixGetter func(*gin.Context) string) gin.HandlerFunc {

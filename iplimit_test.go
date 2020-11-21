@@ -1,7 +1,7 @@
 package gin_redisgo_cooldowns
 
 import (
-	"github.com/go-redis/redis"
+	"github.com/go-redis/redis/v8"
 
 	"net/http"
 	"testing"

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-redis/redis"
+	"github.com/go-redis/redis/v8"
 )
 
 func NewRateLimit(rdb *redis.Client, key string, requests int64, time time.Duration, keySuffixGetter func(*gin.Context) string) gin.HandlerFunc {

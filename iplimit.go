@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gomodule/redigo/redis"
+	"github.com/go-redis/redis"
 )
 
-func NewRateLimit(pool *redis.Pool, key string, requests int64, time time.Duration, keySuffixGetter func(*gin.Context) string) gin.HandlerFunc {
+func NewRateLimit(rdb *redis.Client, key string, requests int64, time time.Duration, keySuffixGetter func(*gin.Context) string) gin.HandlerFunc {
 
 	if keySuffixGetter == nil {
 		keySuffixGetter = KeySuffixGetterIP()
@@ -27,22 +27,16 @@ func NewRateLimit(pool *redis.Pool, key string, requests int64, time time.Durati
 			return
 		}
 
-		// Get and close the pool, also error check to make sure we have the pool.
-		c := pool.Get()
-		defer c.Close()
-		if err := c.Err(); err != nil {
-			panic(err)
-			return
-		}
-
 		// Get the actual number of requests from the database.
 		// Also increments. (INCR spits out the old value, and inserts if new)
-		reply, err := c.Do("INCR", key+keySuffix)
-		if err != nil {
+		res := rdb.Incr(ctx, key+keySuffix)
+		if err := res.Err(); res.Err() != nil {
 			panic(err)
 			return
 		} else {
-			requestNumber = reply.(int64)
+			if requestNumber, err = res.Result(); err != nil {
+				panic(err)
+			}
 		}
 
 		// Check if the current number of requests is greater than allowed.
@@ -50,7 +44,7 @@ func NewRateLimit(pool *redis.Pool, key string, requests int64, time time.Durati
 			// Reset the expiry to give a fresh cooldown.
 			// Set expire once per cool down.
 			if requestNumber == requests {
-				c.Do("EXPIRE", key+keySuffix, time.Seconds())
+				rdb.Expire(ctx, key+keySuffix, time)
 			}
 
 			// Abort and error
@@ -61,7 +55,7 @@ func NewRateLimit(pool *redis.Pool, key string, requests int64, time time.Durati
 			return
 		} else if requestNumber <= 1 {
 			// If it's a new entry in redis, expire the key in a defined time.
-			c.Do("EXPIRE", key+keySuffix, time)
+			rdb.Expire(ctx, key+keySuffix, time)
 		}
 
 		// Give them their request number.

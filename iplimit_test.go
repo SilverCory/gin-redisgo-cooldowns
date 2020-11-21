@@ -1,32 +1,24 @@
 package gin_redisgo_cooldowns
 
 import (
-	"github.com/SilverCory/gin-redisgo-cooldowns/redisutils"
+	"github.com/go-redis/redis"
 
 	"net/http"
 	"testing"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gomodule/redigo/redis"
 )
 
 func TestIpLimiter(t *testing.T) {
 	r := gin.Default()
 
-	redisPool := &redis.Pool{
-		MaxIdle:     10,
-		IdleTimeout: 240 * time.Second,
-		TestOnBorrow: func(c redis.Conn, t time.Time) error {
-			_, err := c.Do("PING")
-			return err
-		},
-		Dial: func() (redis.Conn, error) {
-			return redisutils.DialWithDB("tcp", "127.0.0.1:6379", "", "0")
-		},
-	}
+	rdb := redis.NewClient(&redis.Options{
+		Addr:    "127.0.0.1:6379",
+		DB:       0,
+	})
 
-	r.Use(NewRateLimit(redisPool, "ratelimit.IP:", 100, time.Second*5, nil))
+	r.Use(NewRateLimit(rdb, "ratelimit.IP:", 100, time.Second*5, nil))
 
 	r.GET("/", func(c *gin.Context) {
 		c.String(200, "OK")
